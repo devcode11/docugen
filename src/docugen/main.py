@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--output-path",
     help="Path to output root directory",
+    default='.docugen'
 )
 @click.option("--debug", help="Enable debug logging", is_flag=True)
 def main(project_path: str, output_path: str, debug: bool) -> None:
@@ -28,10 +29,9 @@ def main(project_path: str, output_path: str, debug: bool) -> None:
     """
 
     logging.basicConfig(level=(logging.DEBUG if debug else logging.INFO))
-    logger.debug('args: %s', locals())
+    output_path = output_path.strip() if output_path.strip() else '.docugen'
 
-    output_path = output_path.strip() if output_path else '.docugen'
-    output_path = output_path if output_path else '.docugen'
+    logger.debug('args: %s', locals())
 
     llm = Llamafile()
     store = FileStore(output_path)
