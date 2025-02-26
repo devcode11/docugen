@@ -1,0 +1,24 @@
+[project]
+name = "docugen"
+version = "0.1.0"
+description = "Generate documentation for a project using LLMs."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.8",
+    "langchain>=0.3.19",
+    "langchain-community>=0.3.18",
+]
+
+[project.scripts]
+docugen = "docugen:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "ruff>=0.9.7",
+]
