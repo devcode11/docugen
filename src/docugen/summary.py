@@ -3,7 +3,7 @@ import logging
 import pathlib
 
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models.llms import LLM
+from langchain_core.language_models import BaseLLM
 from .storage import StorageBase
 from .prompts import summary_for_file_prompt
 
@@ -15,7 +15,7 @@ class Generator:
     It ignores files and directories starting with '.'.
     '''
 
-    def __init__(self, llm: LLM, store: StorageBase, ignore_dirs: List[str], ignore_files: List[str]) -> None:
+    def __init__(self, llm: BaseLLM, store: StorageBase, ignore_dirs: List[str], ignore_files: List[str]) -> None:
         self.logger = logging.getLogger('.'.join((__name__, self.__class__.__name__)))
         self.store = store
         self.ignore_dirs = ignore_dirs

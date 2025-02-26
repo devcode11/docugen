@@ -3,14 +3,23 @@ import logging
 import click
 
 from langchain_community.llms.llamafile import Llamafile
+from langchain_ollama import OllamaLLM
+from langchain_core.language_models import BaseLLM
 from .storage import FileStore
 from .constants import IgnoreDirs, IgnoreFiles
 from .summary import Generator
 
 
+def get_llm_tool(llm_tool: str) -> BaseLLM:
+    if llm_tool == 'llamafile':
+        return Llamafile()
+    elif llm_tool.startswith('ollama='):
+        return OllamaLLM(model=llm_tool.removeprefix('ollama='))
+    raise ValueError(f'LLM tool {llm_tool} is not supported')
+
 logger = logging.getLogger(__name__)
 
-@click.command()
+@click.command(help='Generate documents using LLMs')
 @click.option(
     "--project-path",
     required=True,
@@ -20,10 +29,23 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--output-path",
     help="Path to output root directory",
-    default='.docugen'
+    default='.docugen',
+    show_default=True
+)
+@click.option(
+    "--llm-tool",
+    help="""\
+\b
+Supported LLM tools - llamafile, ollama
+Syntax:
+* --llm-tool llamafile
+* --llm-tool ollama=<model-name>
+""",
+    default='llamafile',
+    show_default=True
 )
 @click.option("--debug", help="Enable debug logging", is_flag=True)
-def main(project_path: str, output_path: str, debug: bool) -> None:
+def main(project_path: str, output_path: str, llm_tool: str, debug: bool) -> None:
     """
     Main entrypoint of the CLI.
     """
@@ -33,7 +55,7 @@ def main(project_path: str, output_path: str, debug: bool) -> None:
 
     logger.debug('args: %s', locals())
 
-    llm = Llamafile()
+    llm = get_llm_tool(llm_tool)
     store = FileStore(output_path)
     generator = Generator(llm, store, IgnoreDirs, IgnoreFiles)
 
