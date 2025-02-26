@@ -40,11 +40,9 @@ class Generator:
 
     def _generate_for_dir(self, rootdir: pathlib.Path) -> None:
         for dirpath, subdirs, filenames in rootdir.walk():
-            for d in subdirs:
-                if d in self.ignore_dirs or d.startswith('.'):
-                    subdirs.remove(d)
+            subdirs[:] = [d for d in subdirs if not (d.startswith('.') or d in self.ignore_dirs)]
             for filename in filenames:
-                if filename in self.ignore_files or filename.startswith('.'):
+                if filename.startswith('.') or filename in self.ignore_files:
                     continue
                 self._generate_for_file(pathlib.Path(dirpath, filename))
 
