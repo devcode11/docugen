@@ -8,6 +8,8 @@ from .constants import IgnoreDirs, IgnoreFiles
 from .summary import Generator
 
 
+logger = logging.getLogger(__name__)
+
 @click.command()
 @click.option(
     "--project-path",
@@ -26,7 +28,7 @@ def main(project_path: str, output_path: str, debug: bool) -> None:
     """
 
     logging.basicConfig(level=(logging.DEBUG if debug else logging.INFO))
-    logger = logging.getLogger(__name__)
+    logger.debug('args: %s', locals())
 
     output_path = output_path.strip() if output_path else '.docugen'
     output_path = output_path if output_path else '.docugen'
@@ -35,7 +37,7 @@ def main(project_path: str, output_path: str, debug: bool) -> None:
     store = FileStore(output_path)
     generator = Generator(llm, store, IgnoreDirs, IgnoreFiles)
 
-    logger.debug('Generating documenatation for path %s', project_path)
+    logger.debug('Generating documenatation for project path %s in output path %s', project_path, output_path)
 
     generator.generate(project_path)
 
