@@ -37,21 +37,24 @@ class SummaryGenerator:
 
     def _generate_for_dir(self, rootdir: Path) -> str:
         directory_list_generator = DirectoryListingGenerator(rootdir, self.ignore_patterns)
-        submodules: list[tuple[str, str]] = []
         generated_summary = ''
-        for dirpath, subdirs, filenames in directory_list_generator.generate():
-            for filename in filenames:
-                filepath = Path(dirpath, filename)
-                submodules.append((str(filepath), self._generate_for_file(filepath)))
 
-            for subdir in subdirs:
-                subdirpath = str(Path(dirpath, subdir))
-                submodules.append((subdirpath, self.store.get_summary(subdirpath, True)))
+        files = directory_list_generator.generate_files()
+        for file in files:
+            self._generate_for_file(file)
 
-            prompt = summary_for_directory_prompt(str(dirpath), submodules)
+        directories = directory_list_generator.generate_dirs()
+        submodules: list[tuple[str, str]] = []
+
+        for directory in directories:
+            submodules.clear()
+            for child in directory.iterdir():
+                submodules.append((str(child), self.store.get_summary(str(child), child.is_dir())))
+
+            prompt = summary_for_directory_prompt(str(directory), submodules)
             generated_summary = self.llm.invoke(prompt).removesuffix('<end_of_turn>')
-            self.logger.debug('Generated summary for %s:\n%s\n-----\n', dirpath, generated_summary)
-            self.store.store_summary(str(dirpath), generated_summary, True)
+            self.logger.debug('Generated summary for %s:\n%s\n-----\n', directory, generated_summary)
+            self.store.store_summary(str(directory), generated_summary, True)
         return generated_summary
 
     def _generate_for_file(self, filepath: Path) -> str:

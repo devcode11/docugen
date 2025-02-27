@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterator
+import subprocess
 
 class DirectoryListingGenerator:
     """
@@ -20,41 +20,43 @@ class DirectoryListingGenerator:
         self.custom_ignore_patterns = custom_ignore_patterns
 
 
-    def generate(self) -> Iterator[tuple[Path, list[Path], list[Path]]]:
+    def generate_files(self) -> list[Path]:
         """
-        Recursively generates tuples of (directory name, list of subdirectories, list of filenames).
+        Generate a list of files (without directories) in the tree rooted at `topdir`.
+        It takes .gitignore files and `custom_ignore_patterns` into account, and skips files matching these patterns.
 
-        All subdirectories will be generated before generating a directory.
-        So rootdir will be generated last.
-
-        Similar to os.walk() with `topdown` set to False, but supports ignoring sub-directories and files.
+        Behind the scenes, it uses git to generate this list.
         """
-        yield from self._generate(self.topdir)
+        self._generated_files = self._generate_file_list_with_git()
+        return self._generated_files
 
-    def _generate(self, currentdir: Path) -> Iterator[tuple[Path, list[Path], list[Path]]]:
-        gitignore_patterns = []
-        gitignore_file = currentdir / '.gitignore'
-        if gitignore_file.is_file():
-            gitignore_patterns = [pat.strip() for pat in gitignore_file.read_text().splitlines() if pat.strip()]
+    def generate_dirs(self) -> list[Path]:
+        """
+        Generate a list of directories and subdirectories in the tree rooted at `topdir`, based on the generated files earlier.
+        It takes .gitignore files and `custom_ignore_patterns` into account, and skips files matching these patterns.
 
-        subdirs, files = [], []
-        for child in currentdir.iterdir():
-            if self._is_ignored(child, gitignore_patterns):
-                continue
-            if child.is_dir():
-                yield from self._generate(child)
-                subdirs.append(child)
-            if child.is_file():
-                files.append(child)
+        If files has not been generated earlier using `generate_files`, it returns an empty list.
+        """
+        if not self._generated_files:
+            return []
+        self._generated_dirs = self._generate_dirs_from_file_list()
+        return self._generated_dirs
 
-        yield currentdir, subdirs, files
+    def _generate_file_list_with_git(self) -> list[Path]:
+        git_cmd = 'git ls-files --cached --others --full-name --exclude-standard'
+        git_cmd_run = subprocess.run(git_cmd.split(), stdout=subprocess.PIPE, check=True, cwd=self.topdir)
+        files = [Path(file) for file in git_cmd_run.stdout.decode().splitlines()]
+        files = [file for file in files if not self._is_ignored(file)]
+        return files
 
-    def _is_ignored(self, path: Path, ignore_patterns: list[str]) -> bool:
+    def _generate_dirs_from_file_list(self) -> list[Path]:
+        subdirs = list(set([p.parent for p in self._generated_files if not self._is_ignored(p.parent)]))
+        subdirs.sort(key=lambda p: str(p).count('/'), reverse=True)
+        return subdirs
+
+    def _is_ignored(self, path: Path) -> bool:
         if path.match('.*'):
             return True
-        for pat in ignore_patterns:
-            if path.match(pat):
-                return True
         for pat in self.custom_ignore_patterns:
             if path.match(pat):
                 return True
