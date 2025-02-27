@@ -6,8 +6,8 @@ from langchain_community.llms.llamafile import Llamafile
 from langchain_ollama import OllamaLLM
 from langchain_core.language_models import BaseLLM
 from .storage import FileStore
-from .constants import IgnoreDirs, IgnoreFiles
-from .summary import Generator
+from .constants import IgnorePatterns
+from .summary import SummaryGenerator
 
 
 def get_llm_tool(llm_tool: str) -> BaseLLM:
@@ -57,7 +57,7 @@ def main(project_path: str, output_path: str, llm_tool: str, debug: bool) -> Non
 
     llm = get_llm_tool(llm_tool)
     store = FileStore(output_path)
-    generator = Generator(llm, store, IgnoreDirs, IgnoreFiles)
+    generator = SummaryGenerator(llm, store, IgnorePatterns)
 
     logger.debug('Generating documenatation for project path %s in output path %s', project_path, output_path)
 
