@@ -41,7 +41,7 @@ class DirectoryTreeGenerator:
         return files
 
     def _is_ignored(self, path: Path) -> bool:
-        if path.match('.*'):
+        if any(part.startswith('.') for part in path.parts):
             return True
         for pat in self.custom_ignore_patterns:
             if path.match(pat):
