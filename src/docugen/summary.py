@@ -5,7 +5,7 @@ from pathlib import Path
 from langchain_core.language_models import BaseLLM
 from .storage import StorageBase
 from .prompts import summary_for_file_prompt, summary_for_directory_prompt
-from .directory_list import DirectoryListingGenerator
+from .directory_tree import DirectoryTreeGenerator
 
 
 class SummaryGenerator:
@@ -36,20 +36,18 @@ class SummaryGenerator:
             raise ValueError(f'Path {pathStr} should be an existing file or directory.')
 
     def _generate_for_dir(self, rootdir: Path) -> str:
-        directory_list_generator = DirectoryListingGenerator(rootdir, self.ignore_patterns)
+        dir_tree = DirectoryTreeGenerator(rootdir, self.ignore_patterns)
         generated_summary = ''
 
-        files = directory_list_generator.generate_files()
-        for file in files:
-            self._generate_for_file(file)
-
-        directories = directory_list_generator.generate_dirs()
         submodules: list[tuple[str, str]] = []
-
-        for directory in directories:
+        for directory, subdirs, files in dir_tree.walk():
             submodules.clear()
-            for child in directory.iterdir():
-                submodules.append((str(child), self.store.get_summary(str(child), child.is_dir())))
+            for file in files:
+                self._generate_for_file(file)
+                submodules.append((str(file), self.store.get_summary(str(file), False)))
+
+            for subdir in subdirs:
+                submodules.append((str(subdir), self.store.get_summary(str(subdir), True)))
 
             prompt = summary_for_directory_prompt(str(directory), submodules)
             generated_summary = self.llm.invoke(prompt).removesuffix('<end_of_turn>')
