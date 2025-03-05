@@ -19,7 +19,7 @@ def get_llm_tool(llm_tool: str) -> BaseLLM:
 
 logger = logging.getLogger(__name__)
 
-@click.command(help='Generate documents using LLMs')
+@click.command(help='Generate project documentation using LLMs')
 @click.option(
     "--project-path",
     required=True,
